@@ -175,9 +175,14 @@ sub run_as_child {
 
         POSIX::setsid();
 
-        # use the pipes to replace STD{OUT,ERR}
-        open(STDOUT, '>&=', fileno($out_write));
-        open(STDERR, '>&=', fileno($err_write));
+       POSIX::close(0);
+       open(my $stdin, "</dev/null");
+
+       POSIX::close(1);
+       POSIX::dup(fileno($out_write));
+
+       POSIX::close(2);
+       POSIX::dup(fileno($err_write));
 
         exit $code->(@args);
     }
