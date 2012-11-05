@@ -1,41 +1,83 @@
-Name:      	munin
-Version:   	@@VERSION@@
-Release:	1
+# norootforbuild
 
-Summary:	Network-wide graphing framework (grapher/gatherer)
-License: 	GPL
-Group:		System Environment/Daemons
-URL:		http://munin.sourceforge.net
-Packager:	Rune Nordbøe Skillingstad <runesk@linpro.no>
-Vendor:		Linpro AS
-Distribution:	Linpro AS SuSE Linux Software Archives
-Source0:	%{name}_%{version}.tar.gz
-Source1:	Makefile.config
-Source2:	munin-node.rc
-Source3:	munin.cron.d
-Source4:	munin.logrotate
-Source5:	munin-node.logrotate
-Source6:	munin-node.cron.d
-Source7:	plugins.conf
-Patch0:		patch-001
-Patch1:		patch-002
-Requires:	perl-HTML-Template
-Requires:	rrdtool
-Obsoletes:	lrrd-server
-BuildArch:	noarch
-BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+Name:       munin
+Version:    @@VERSION@@
+Release:    1
+Summary:    Network-wide graphing framework (grapher/gatherer)
 
-%define         confdir /etc/munin
-%define         libdir  /usr/share/munin
-%define         htmldir /srv/www/htdocs/munin
-%define         cgidir  /srv/www/cgi-bin
-%define         dbdir   /var/lib/munin
-%define         logdir  /var/log/munin
-%define         statedir /var/run/munin
+Group:		System/Monitoring
+License:    GPLv2
+URL:        http://munin-monitoring.org/
+Packager:   Alexander Bruegmann <alexander.bruegmann@stadt-koeln.de>
+Vendor:     Stadt Koeln - Amt fÃ¼r Informationsverarbeitung
+Distribution:   SuSE Linux STK
+
+Source0:    http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source8:    http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz.sha256sum
+Source1:    Makefile.config
+Source2:    munin-node.rc
+Source3:    munin.cron.d
+Source4:    munin.logrotate
+Source5:    munin-node.logrotate
+Source6:    munin-node.cron.d
+Source7:    plugins.conf
+
+Patch1:     munin-2.0.6-use-system-fonts.patch
+
+BuildArch:  noarch
+BuildRoot:  %{_tmppath}/%{name}-%{version}-root
+
+%define         htmldir         /srv/www/htdocs/munin
+%define         cgidir          /srv/www/cgi-bin
+%define         dbdir           /var/lib/munin
+%define         logdir          /var/log/munin
+%define         statedir        /var/run/munin
+
+BuildRequires:  /bin/hostname
+#BuildRequires:	html2text htmldoc
+BuildRequires:	pwdutils sysvinit
+BuildRequires:  /usr/bin/rename
+BuildRequires:  perl-base = %{perl_version}
+BuildRequires:  perl(Module::Build)
+BuildRequires:  perl(Time::HiRes)
+BuildRequires:  perl(Net::SSLeay)
+BuildRequires:  perl(Net::Server)
+BuildRequires:  perl(HTML::Template)
+BuildRequires:  perl(Log::Log4perl)
+BuildRequires:  perl(Net::SNMP)
+
+# Munin server requires
+Requires:       logrotate
+Requires:       pwdutils rrdtool
+Requires:       %{name}-common = %{version}
+Requires:       perl-base = %{perl_version}
+Requires:       perl(Time::HiRes)
+Requires:       perl(Storable)
+Requires:       perl(Digest::MD5)
+Requires:       perl(HTML::Template)
+Requires:       perl(Text::Balanced)
+Requires:       perl(Params::Validate)
+Requires:       perl(DateTime)
+Requires:       perl(Net::SSLeay)
+Requires:       perl(Getopt::Long)
+Requires:       perl(File::Copy::Recursive)
+Requires:       perl(CGI::Fast)
+Requires:       perl(IO::Socket::INET6)
+Requires:       perl(Log::Log4perl) >= 1.18
+Requires:       perl(Net::Server)
+Requires:       perl(Net::SNMP)
+
+# Munin node requires
+Requires:       perl(File::Path)
+Requires:       perl(Net::Server)
+Requires:       perl(Net::Server::Fork)
+Requires:       perl(Crypt::DES)
+Requires:       perl(Digest::HMAC)
+Requires:       perl(Digest::SHA1)
 
 %description
-Munin is a highly flexible and powerful solution used to create graphs of
-virtually everything imaginable throughout your network, while still
+Munin is a highly flexible and powerful solution used to create graphs
+of virtually everything imaginable throughout your network, while still
 maintaining a rattling ease of installation and configuration.
 
 This package contains the grapher/gatherer. You will only need one instance of
@@ -44,21 +86,25 @@ it's aware of for data, which it in turn will use to create graphs and HTML
 pages, suitable for viewing with your graphical web browser of choice.
 
 Munin is written in Perl, and relies heavily on Tobi Oetiker's excellent
-RRDtool. To see a real example of Munin in action, take a peek at
-<http://demo.munin-monitoring.org>.
+RRDtool.
+
 
 %package node
-Group:		System Environment/Daemons
-Summary:	Network-wide graphing framework (node)
-BuildArch: 	noarch
-Requires: 	perl-Net-Server
-Requires:	ps
-Requires:	sysstat
-Obsoletes:	lrrd-client
+Group:          System/Monitoring
+Summary:        Network-wide graphing framework (node)
+BuildArch:      noarch
+Requires:       perl-base = %{perl_version}
+Requires:       pwdutils ps sysstat
+Requires:       %{name}-common = %{version}
+Requires:       perl(Net::Server)
+Requires:       perl(Net::Server::Fork)
+Requires:       perl(Crypt::DES)
+Requires:       perl(Digest::HMAC)
+Requires:       perl(Digest::SHA1)
 
 %description node
-Munin is a highly flexible and powerful solution used to create graphs of
-virtually everything imaginable throughout your network, while still
+Munin is a highly flexible and powerful solution used to create graphs
+of virtually everything imaginable throughout your network, while still
 maintaining a rattling ease of installation and configuration.
 
 This package contains node software. You should install it on all the nodes
@@ -71,82 +117,74 @@ cpu usage, network usage, load average, and so on. Creating your own plugins
 which are capable of extracting other system-specific values is very easy,
 and is often done in a matter of minutes. You can also create plugins which
 relay information from other devices in your network that can't run Munin,
-such as a switch or a server running another operating system, by using
-SNMP or similar technology.
+such as a switch or a server running another operating system, by using SNMP
+or similar technology.
 
 Munin is written in Perl, and relies heavily on Tobi Oetiker's excellent
-RRDtool. To see a real example of Munin in action, take a peek at
-<http://www.linpro.no/projects/munin/example/>.
+RRDtool.
+
+%package common
+Group:          System/Monitoring
+Summary:        Network-wide graphing framework (common files)
+BuildArchitectures: noarch
+Requires:	    perl-base = %{perl_version}
+
+%description common
+Munin is a highly flexible and powerful solution used to create graphs
+of virtually everything imaginable throughout your network, while still
+maintaining a rattling ease of installation and configuration.
+
+This package contains common files that are used by both the server (munin)
+and node (munin-node) packages.
 
 %prep
-%setup -q
-%patch0
+%setup -q -n munin-%{version}
+
 %patch1 -p1
-mkdir -p %{buildroot}
+
+cp %{SOURCE1} .
 
 %build
+%__make
 
-# htmldoc and html2text are not available for Red Hat. Quick hack with perl:
-# Skip the PDFs.
-perl -pi -e 's,htmldoc munin,cat munin, or s,html(2text|doc),# $&,' Makefile
-perl -pi -e 's,\$\(INSTALL.+\.(pdf|txt) \$\(DOCDIR,# $&,' Makefile
-
-make 	clean
-make    CONFIG=%{SOURCE1} \
-        DOCDIR=%{_docdir}/munin \
-        MANDIR=%{_mandir} \
-	HTMLDIR=%{htmldir} \
-	CGIDIR=%{cgidir} \
-	LIBDIR=%{libdir} \
-	CONFDIR=%{confdir} \
-        DESTDIR=%{buildroot} \
-        DBDIR=%{dbdir} \
-        SBINDIR=%{_sbindir} \
-        LOGDIR=%{logdir} \
-        STATEDIR=%{statedir} \
-        build
-
-mkdir -p %{buildroot}%{dbdir}/plugin-state
-mkdir -p %{buildroot}%{logdir}
-mkdir -p %{buildroot}%{statedir}
-mkdir -p %{buildroot}/etc/init.d
-mkdir -p %{buildroot}/etc/cron.d
-mkdir -p %{buildroot}/etc/logrotate.d
-mkdir -p %{buildroot}%{htmldir}
+# Convert to utf-8
+for file in Announce-2.0 COPYING ChangeLog Checklist HACKING.pod README RELEASE UPGRADING UPGRADING-1.4; do
+    iconv -f ISO-8859-1 -t UTF-8 -o $file.new $file && \
+    touch -r $file $file.new && \
+    mv $file.new $file
+done
 
 %install
-make    CONFIG=%{SOURCE1} \
-        DOCDIR=%{buildroot}%{_docdir}/munin \
-        MANDIR=%{buildroot}%{_mandir} \
-	HTMLDIR=%{buildroot}%{htmldir} \
-	LIBDIR=%{buildroot}%{libdir} \
-	CGIDIR=%{buildroot}%{cgidir} \
-	CONFDIR=%{buildroot}%{confdir} \
-        DESTDIR=%{buildroot} \
-        DBDIR=%{buildroot}%{dbdir} \
-        SBINDIR=%{buildroot}%{_sbindir} \
-        LOGDIR=%{buildroot}%{logdir} \
-        STATEDIR=%{buildroot}%{statedir} \
-        install-main install-node install-node-plugins install-doc install-man 
-								
-install -m0755 %{SOURCE2} %{buildroot}/etc/init.d/munin-node
-install -m0644 %{SOURCE3} %{buildroot}/etc/cron.d/munin
-install -m0644 %{SOURCE4} %{buildroot}/etc/logrotate.d/munin
-install -m0644 %{SOURCE5} %{buildroot}/etc/logrotate.d/munin-node
-install -m0644 %{SOURCE6} %{buildroot}/etc/cron.d/munin-node
-install -m0644 %{SOURCE7} %{buildroot}%{confdir}/plugin-conf.d/munin-node
-install -m0644 ChangeLog %{buildroot}%{_docdir}/munin/ChangeLog
+%makeinstall
+%__mkdir_p %{buildroot}/%{_sysconfdir}/munin/plugins
+%__mkdir_p %{buildroot}/%{_sysconfdir}/munin/munin-conf.d
+
+%__mkdir_p %{buildroot}/%{_sysconfdir}/init.d
+%__install -m0755 %{SOURCE2} %{buildroot}/%{_sysconfdir}/init.d/munin-node
+
+%__mkdir_p %{buildroot}/%{_sysconfdir}/cron.d
+%__install -m0644 %{SOURCE3} %{buildroot}/%{_sysconfdir}/cron.d/munin
+%__install -m0644 %{SOURCE6} %{buildroot}/%{_sysconfdir}/cron.d/munin-node
+
+%__mkdir_p %{buildroot}/%{_sysconfdir}/logrotate.d
+%__install -m0644 %{SOURCE4} %{buildroot}/%{_sysconfdir}/logrotate.d/munin
+%__install -m0644 %{SOURCE5} %{buildroot}/%{_sysconfdir}/logrotate.d/munin-node
+
+%__mkdir_p %{buildroot}/%{_sysconfdir}/munin/plugin-conf.d
+%__install -m0644 %{SOURCE7} %{buildroot}/%{_sysconfdir}/munin/plugin-conf.d/munin-node
+
+# remove duplicated fonts
+rm %{buildroot}/usr/lib/munin/DejaVuSans*.ttf
+
+mkdir -p %{buildroot}/sbin
+%__ln_s ../etc/init.d/munin-node $RPM_BUILD_ROOT/sbin/rcmunin-node
 
 %clean
-[ -n "%{buildroot}" -a "%{buildroot}" != / ] && rm -rf %{buildroot}
-
-
-## Server
+%{__rm} -rf %{buildroot}
 
 %pre
-
-getent group munin >/dev/null || groupadd -r munin
-getent passwd munin > /dev/null || useradd -r -d %{dbdir} -g munin munin
+/usr/sbin/groupadd -r   munin &>/dev/null || :
+/usr/sbin/useradd -o -g munin -s /bin/false -r -c "munin monitoring" -d /var/lib/munin munin &>/dev/null || :
 
 %post
 mkdir -p %{htmldir}
@@ -159,16 +197,15 @@ chown -R munin:munin %{dbdir}
 
 ## Node
 %pre node
-getent group munin >/dev/null || groupadd -r munin
-getent passwd munin > /dev/null || useradd -r -d %{dbdir} -g munin munin
+getent group munin >/dev/null || /usr/sbin/groupadd -r munin
+getent passwd munin > /dev/null || /usr/sbin/useradd -r -d %{dbdir} -g munin munin
 
 %post node
 if [ $1 = 1 ]
 then
-        /sbin/chkconfig --add munin-node
+	/sbin/chkconfig --add munin-node
 	/usr/sbin/munin-node-configure --shell | sh
 fi
-%{fillup_and_insserv -n -s -y munin munin-node START_MUNIN_NODE}
 mkdir -p %{logdir}
 mkdir -p %{dbdir}/plugin-state
 chown -R munin:munin %{logdir}
@@ -189,78 +226,218 @@ fi
 %restart_on_update munin-node
 %{insserv_cleanup}
 
-
 %files
 %defattr(-, root, root)
-%doc %{_docdir}/munin/README.api
-%doc %{_docdir}/munin/README.plugins
-%doc %{_docdir}/munin/COPYING
-%doc %{_docdir}/munin/ChangeLog
-%doc %{_mandir}/man8/munin-graph*
-%doc %{_mandir}/man8/munin-update*
-%doc %{_mandir}/man8/munin-html*
-%doc %{_mandir}/man8/munin-cron*
-%doc %{_mandir}/man5/munin.conf*
-%doc %{_mandir}/man8/munin-limits.8.gz
+%{_bindir}/munin-check
 %{_bindir}/munin-cron
-%{_datadir}/munin/munin-graph
-%{_datadir}/munin/munin-html
-%{_datadir}/munin/munin-update
-%{_libdir}/perl5/*perl/5.*/Munin.pm
-%{_usr}/share/munin/munin-limits
+%{_bindir}/munindoc
+%dir %{_prefix}/lib/munin
+%{_prefix}/lib/munin/munin-async
+%{_prefix}/lib/munin/munin-asyncd
+%{_prefix}/lib/munin/munin-datafile2storable
+%{_prefix}/lib/munin/munin-graph
+%{_prefix}/lib/munin/munin-html
+%{_prefix}/lib/munin/munin-jmx-plugins.jar
+%{_prefix}/lib/munin/munin-limits
+%{_prefix}/lib/munin/munin-storable2datafile
+%{_prefix}/lib/munin/munin-update
 %{cgidir}/munin-cgi-graph
-%config %{confdir}/templates/*
-%config /etc/cron.d/munin
-%config(noreplace) %{confdir}/munin.conf
-%config /etc/logrotate.d/munin
+%{cgidir}/munin-cgi-html
+%dir %{htmldir}
+%{htmldir}/.htaccess
+%dir %{_sysconfdir}/munin
+%dir %{_sysconfdir}/munin/munin-conf.d
+%dir %{_sysconfdir}/munin/templates
+%config %{_sysconfdir}/munin/templates/*
+%dir %{_sysconfdir}/munin/static
+%config %{_sysconfdir}/munin/static/*
+%config %{_sysconfdir}/cron.d/munin
+%config(noreplace) %{_sysconfdir}/munin/munin.conf
+%config %{_sysconfdir}/logrotate.d/munin
 %dir %{statedir}
+%dir %{perl_vendorlib}/Munin
+%dir %{perl_vendorlib}/Munin/Master
+%{perl_vendorlib}/Munin/Master/Config.pm
+%{perl_vendorlib}/Munin/Master/GraphOld.pm
+%{perl_vendorlib}/Munin/Master/Group.pm
+%{perl_vendorlib}/Munin/Master/GroupRepository.pm
+%{perl_vendorlib}/Munin/Master/HTMLConfig.pm
+%{perl_vendorlib}/Munin/Master/HTMLOld.pm
+%{perl_vendorlib}/Munin/Master/Host.pm
+%{perl_vendorlib}/Munin/Master/LimitsOld.pm
+%{perl_vendorlib}/Munin/Master/Logger.pm
+%{perl_vendorlib}/Munin/Master/Node.pm
+%{perl_vendorlib}/Munin/Master/ProcessManager.pm
+%{perl_vendorlib}/Munin/Master/Update.pm
+%{perl_vendorlib}/Munin/Master/UpdateWorker.pm
+%{perl_vendorlib}/Munin/Master/Utils.pm
+%{perl_vendorlib}/Munin/Master/Worker.pm
+%{_mandir}/man3/Munin::Master::Config.3pm.gz
+%{_mandir}/man3/Munin::Master::Group.3pm.gz
+%{_mandir}/man3/Munin::Master::GroupRepository.3pm.gz
+%{_mandir}/man3/Munin::Master::HTMLOld.3pm.gz
+%{_mandir}/man3/Munin::Master::Host.3pm.gz
+%{_mandir}/man3/Munin::Master::Logger.3pm.gz
+%{_mandir}/man3/Munin::Master::Node.3pm.gz
+%{_mandir}/man3/Munin::Master::ProcessManager.3pm.gz
+%{_mandir}/man3/Munin::Master::Update.3pm.gz
+%{_mandir}/man3/Munin::Master::UpdateWorker.3pm.gz
+%{_mandir}/man3/Munin::Master::Utils.3pm.gz
+%{_mandir}/man3/Munin::Master::Worker.3pm.gz
+%{_mandir}/man5/munin-node.conf.5.gz
+%{_mandir}/man5/munin.conf.5.gz
+%{_mandir}/man8/munin-check.8.gz
+%{_mandir}/man8/munin-cron.8.gz
+%{_mandir}/man8/munin-graph.8.gz
+%{_mandir}/man8/munin-html.8.gz
+%{_mandir}/man8/munin-limits.8.gz
+%{_mandir}/man8/munin-update.8.gz
+%{_mandir}/man8/munin.8.gz
 
-	    
+
 %files node
 %defattr(-, root, root)
-%doc %{_docdir}/munin/COPYING
-%doc %{_docdir}/munin/munin-doc.html
-%doc %{_docdir}/munin/munin-faq.html
-%doc %{_mandir}/man8/munin-run*
-%doc %{_mandir}/man8/munin-node*
-%doc %{_mandir}/man5/munin-node*
 %{_sbindir}/munin-run
 %{_sbindir}/munin-node
 %{_sbindir}/munin-node-configure
-%{_sbindir}/munin-node-configure-snmp
-%{_datadir}/munin/plugins/*
-%config(noreplace) %{confdir}/munin-node.conf
-%config(noreplace) %{confdir}/plugin-conf.d/munin-node
-%config /etc/init.d/munin-node
-%config /etc/cron.d/munin-node
-%config /etc/logrotate.d/munin-node
-%dir %{confdir}/plugins
+%{_sbindir}/munin-sched
+%dir %{_prefix}/lib/munin/plugins
+%{_prefix}/lib/munin/plugins/*
+/sbin/rcmunin-node
+%dir %{_sysconfdir}/munin/plugin-conf.d
+%dir %{_sysconfdir}/munin/plugins
+%config(noreplace) %{_sysconfdir}/munin/plugin-conf.d/munin-node
+%config(noreplace) %{_sysconfdir}/munin/munin-node.conf
+%config %{_sysconfdir}/init.d/munin-node
+%config %{_sysconfdir}/cron.d/munin-node
+%config %{_sysconfdir}/logrotate.d/munin-node
+%dir %{perl_vendorlib}/Munin/Common
+%{perl_vendorlib}/Munin/Common/Config.pm
+%{perl_vendorlib}/Munin/Common/Defaults.pm
+%{perl_vendorlib}/Munin/Common/TLS.pm
+%{perl_vendorlib}/Munin/Common/TLSClient.pm
+%{perl_vendorlib}/Munin/Common/TLSServer.pm
+%{perl_vendorlib}/Munin/Common/Timeout.pm
+%dir %{perl_vendorlib}/Munin/Node
+%{perl_vendorlib}/Munin/Node/Config.pm
+%dir %{perl_vendorlib}/Munin/Node/Configure
+%{perl_vendorlib}/Munin/Node/Configure/Debug.pm
+%{perl_vendorlib}/Munin/Node/Configure/History.pm
+%{perl_vendorlib}/Munin/Node/Configure/HostEnumeration.pm
+%{perl_vendorlib}/Munin/Node/Configure/Plugin.pm
+%{perl_vendorlib}/Munin/Node/Configure/PluginList.pm
+%{perl_vendorlib}/Munin/Node/Logger.pm
+%{perl_vendorlib}/Munin/Node/OS.pm
+%{perl_vendorlib}/Munin/Node/ProxySpooler.pm
+%{perl_vendorlib}/Munin/Node/SNMPConfig.pm
+%{perl_vendorlib}/Munin/Node/Server.pm
+%{perl_vendorlib}/Munin/Node/Service.pm
+%{perl_vendorlib}/Munin/Node/Session.pm
+%{perl_vendorlib}/Munin/Node/SpoolReader.pm
+%{perl_vendorlib}/Munin/Node/SpoolWriter.pm
+%{perl_vendorlib}/Munin/Node/Utils.pm
+%{perl_vendorlib}/Munin/Plugin.pm
+%dir %{perl_vendorlib}/Munin/Plugin
+%{perl_vendorlib}/Munin/Plugin/Pgsql.pm
+%{perl_vendorlib}/Munin/Plugin/SNMP.pm
+%{_mandir}/man1/munin-node-configure.1.gz
+%{_mandir}/man1/munin-node.1.gz
+%{_mandir}/man1/munin-run.1.gz
+%{_mandir}/man1/munin-sched.1.gz
+%{_mandir}/man1/munindoc.1.gz
+%{_mandir}/man3/Munin::Common::Config.3pm.gz
+%{_mandir}/man3/Munin::Common::Defaults.3pm.gz
+%{_mandir}/man3/Munin::Common::TLS.3pm.gz
+%{_mandir}/man3/Munin::Common::TLSClient.3pm.gz
+%{_mandir}/man3/Munin::Common::TLSServer.3pm.gz
+%{_mandir}/man3/Munin::Common::Timeout.3pm.gz
+%{_mandir}/man3/Munin::Node::Config.3pm.gz
+%{_mandir}/man3/Munin::Node::Configure::Debug.3pm.gz
+%{_mandir}/man3/Munin::Node::Configure::History.3pm.gz
+%{_mandir}/man3/Munin::Node::Configure::HostEnumeration.3pm.gz
+%{_mandir}/man3/Munin::Node::Configure::Plugin.3pm.gz
+%{_mandir}/man3/Munin::Node::Configure::PluginList.3pm.gz
+%{_mandir}/man3/Munin::Node::Logger.3pm.gz
+%{_mandir}/man3/Munin::Node::OS.3pm.gz
+%{_mandir}/man3/Munin::Node::ProxySpooler.3pm.gz
+%{_mandir}/man3/Munin::Node::SNMPConfig.3pm.gz
+%{_mandir}/man3/Munin::Node::Server.3pm.gz
+%{_mandir}/man3/Munin::Node::Service.3pm.gz
+%{_mandir}/man3/Munin::Node::Session.3pm.gz
+%{_mandir}/man3/Munin::Node::SpoolReader.3pm.gz
+%{_mandir}/man3/Munin::Node::SpoolWriter.3pm.gz
+%{_mandir}/man3/Munin::Node::Utils.3pm.gz
+%{_mandir}/man3/Munin::Plugin.3pm.gz
+%{_mandir}/man3/Munin::Plugin::Pgsql.3pm.gz
+%{_mandir}/man3/Munin::Plugin::SNMP.3pm.gz
+
+%files common
+%defattr(-,root,root)
+%doc Announce-2.0 COPYING ChangeLog Checklist HACKING.pod README RELEASE UPGRADING UPGRADING-1.4
+%dir %{perl_vendorlib}/Munin
+%{perl_vendorlib}/Munin/Common
+%dir %attr(-,munin,munin) %{_localstatedir}/run/%{name}/
 
 %changelog
-* Mon Apr  3 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Mon Nov 05 2012 Alexander Bruegmann <alexander.bruegmann@stadt-koeln.de> - 2.0.7-1
+- new upstream version <2.0.7>
+* Fri Nov 02 2012 Alexander Bruegmann <alexander.bruegmann@stadt-koeln.de> - 2.0.6-3
+- exclude ttf-fonts from package, use system fonts instead 
+* Mon Oct 29 2012 Alexander Bruegmann <alexander.bruegmann@stadt-koeln.de> - 2.0.6-2
+- fix issue: empty output by munin-node
+* Tue Oct 09 2012 Alexander Bruegmann <alexander.bruegmann@stadt-koeln.de> - 2.0.6-1
+- new upstream version <2.0.6>
+- update spec-file accordingly
+
+* Wed Jun 09 2010 Detlef Reichelt <detlef@links2linux.de> - 1.4.5
+- new upstream version <1.4.5>
+ * bugfix release
+
+* Sat Mar 06 2010 Detlef Reichelt <detlef@links2linux.de> - 1.4.4
+- new upstream version <1.4.4>
+
+* Thu Dec 31 2009 Detlef Reichelt <detlef@links2linux.de> - 1.4.3
+- new upstream release <1.4.3>
+* Mon Dec 21 2009 Detlef Reichelt <detlef@links2linux.de> - 1.4.2
+- new upstream release <1.4.2>
+* Mon Dec 07 2009 Detlef Reichelt <detlef@links2linux.de> - 1.4.1
+- new upstream release <1.4.1>
+* Sat Nov 28 2009 Detlef Reichelt <detlef@links2linux.de> - 1.4.0
+- new upstream release <1.4.0>
+* Sat Dec 27 2008 Detlef Reichelt 1.2.6
+- add UTF8 patch
+* Sat Jul 19 2008 Detlef Reichelt <1.2.6>-<0.pm.1>
+- new upstream release <1.2.6>
+* Wed Aug 15 2007 Detlef Reichelt <1.2.5>-<0.pm.1>
+- new upstream release <1.2.5>
+* Mon Oct 17 2005 Detlef Reichelt <detlef@links2linux.de>
+- Fixed missing /sbin/rcmunin-node
+* Sun Oct 16 2005 Detlef Reichelt <detlef@links2linux.de>
+- First build for packman
+* Mon Apr  3 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - 1.2.3 release
-* Fri Apr  1 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Fri Apr  1 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - 1.2.2 release
 - Fixed SF bug 1164481 (missing /srv/www/htdocs/munin)
 - Fixed SF bug 1164477 (patch for Net::Domain on PPC64)
-* Fri Mar 11 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Fri Mar 11 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - 1.2.1 release
-* Wed Mar  9 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Wed Mar  9 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Fixed erronumous path to web directory
 - Added start of node if not running
-* Thu Mar  8 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Thu Mar  8 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Fixed some build path problems
-* Thu Feb 24 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Thu Feb 24 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - New major release
-* Wed Feb  9 2005 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Wed Feb  9 2005 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Updated to version 1.2.0rc2.
 - Removed Nagios stuff
 - Added noreplace for some central configuration files
-* Thu Nov 18 2004 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Thu Nov 18 2004 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Updated to version 1.0.4
-* Mon Nov 08 2004 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Mon Nov 08 2004 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Updated version 1.0.3 / sync with redhat-build
-* Wed Aug 04 2004 Rune Nordbøe Skillingstad <runesk@linpro.no>
+* Wed Aug 04 2004 Rune Nordbe Skillingstad <runesk@linpro.no>
 - Initial SuSE build
 * Sun Feb 01 2004 Ingvar Hagelund <ingvar@linpro.no>
 - Sync with CVS. Version 1.0.0pre2
@@ -283,5 +460,3 @@ fi
 - Small bugfixes in the rpm package
 * Tue Jun 18 2002 Kjetil Torgrim Homme <kjetilho@linpro.no>
 - new package
-
-
