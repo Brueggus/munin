@@ -48,7 +48,7 @@ BuildRequires:  perl(Net::SNMP)
 
 # Munin server requires
 Requires:       logrotate
-Requires:       pwdutils rrdtool
+Requires:       pwdutils rrdtool dejavu
 Requires:       %{name}-common = %{version}
 Requires:       perl-base = %{perl_version}
 Requires:       perl(Time::HiRes)
