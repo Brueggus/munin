@@ -27,6 +27,7 @@ INFILES_MASTER   := $(shell find master -name '*.in' | sed 's/\(.*\)\.in$$/build
 CLASSFILES       := $(shell find plugins/javalib -name '*.java' | sed 's/\(.*\)\.java$$/build\/\1.class/')
 PLUGINS		 := $(wildcard plugins/node.d.$(OSTYPE)/* plugins/node.d/* $(JAVA_PLUGINS))
 MANCENTER        := "Munin Documentation"
+MAN1		 := node/_bin/munin-node node/_bin/munin-node-configure node/_bin/munin-run node/_bin/munin-sched
 MAN8		 := master/_bin/munin-update master/_bin/munin-limits master/_bin/munin-html master/_bin/munin-graph
 PODMAN8          := build/master/doc/munin-cron master/doc/munin master/doc/munin-check
 PODMAN5          := build/master/doc/munin.conf node/doc/munin-node.conf
@@ -179,6 +180,11 @@ install-async-prime:
 	$(INSTALL) -m 0755 build/node/_bin/munin-asyncd $(LIBDIR)/
 
 install-node-prime: install-node-pre install-node
+	mkdir -p $(SBINDIR)
+	$(INSTALL) -m 0755 build/node/_bin/munin-node $(SBINDIR)/
+	$(INSTALL) -m 0755 build/node/_bin/munin-node-configure $(SBINDIR)/
+	$(INSTALL) -m 0755 build/node/_bin/munin-run $(SBINDIR)/
+	$(INSTALL) -m 0755 build/node/_bin/munin-sched $(SBINDIR)/
 
 install-node-pre: build/node/munin-node.conf install-pre
 	test -f "$(CONFDIR)/munin-node.conf" || $(INSTALL) -m 0644 build/node/munin-node.conf $(CONFDIR)/
@@ -189,6 +195,10 @@ install-common-prime: build-common install-common
 
 install-man: build-man Makefile Makefile.config
 	mkdir -p $(MANDIR)/man1 $(MANDIR)/man5 $(MANDIR)/man8
+	$(INSTALL) -m 0644 build/doc/munin-node.1 $(MANDIR)/man1/
+	$(INSTALL) -m 0644 build/doc/munin-node-configure.1 $(MANDIR)/man1/
+	$(INSTALL) -m 0644 build/doc/munin-run.1 $(MANDIR)/man1/
+	$(INSTALL) -m 0644 build/doc/munin-sched.1 $(MANDIR)/man1/
 	$(INSTALL) -m 0644 build/doc/munin-node.conf.5 $(MANDIR)/man5/
 	$(INSTALL) -m 0644 build/doc/munin.conf.5 $(MANDIR)/man5/
 	$(INSTALL) -m 0644 build/doc/munin-update.8 $(MANDIR)/man8/
@@ -297,6 +307,9 @@ build-man: build-man-stamp Makefile Makefile.config
 build-man-stamp:
 	touch build-man-stamp
 	mkdir -p build/doc
+	for f in $(MAN1); do \
+	    pod2man --section=1 --release=$(RELEASE) --center=$(MANCENTER) build/"$$f" > build/doc/`basename $$f`.1; \
+	done
 	for f in $(MAN8); do \
 	   pod2man --section=8 --release=$(RELEASE) --center=$(MANCENTER) build/"$$f" > build/doc/`basename $$f`.8; \
 	done
